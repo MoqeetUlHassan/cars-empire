@@ -6,6 +6,10 @@ import api from '../lib/api';
 const HomePage = () => {
   const [categories, setCategories] = useState([]);
   const [apiTest, setApiTest] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     // Test API connection
@@ -31,6 +35,30 @@ const HomePage = () => {
     testAPI();
     fetchCategories();
   }, []);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setIsSearching(true);
+
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) {
+        params.append('query', searchQuery.trim());
+      }
+      if (selectedType) {
+        params.append('type', selectedType);
+      }
+      params.append('per_page', '6'); // Limit results for demo
+
+      const response = await api.get(`/vehicles/search?${params.toString()}`);
+      setSearchResults(response.data);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults({ error: 'Search failed. Please try again.' });
+    } finally {
+      setIsSearching(false);
+    }
+  };
   return (
     <div>
       {/* API Test Results */}
@@ -59,6 +87,40 @@ const HomePage = () => {
         )}
       </div>
 
+      {/* Search Results */}
+      {searchResults && (
+        <div className="bg-yellow-500 text-black p-4 m-4" style={{backgroundColor: 'yellow', color: 'black', padding: '16px', margin: '16px'}}>
+          <h3>🔍 Search Results:</h3>
+          {searchResults.error ? (
+            <p className="text-red-600">{searchResults.error}</p>
+          ) : (
+            <div>
+              <p><strong>Found:</strong> {searchResults.pagination?.total || 0} vehicles</p>
+              {searchResults.data && searchResults.data.length > 0 ? (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {searchResults.data.map(vehicle => (
+                    <div key={vehicle.id} className="bg-white p-4 rounded-lg shadow">
+                      <h4 className="font-bold text-lg">{vehicle.title}</h4>
+                      <p className="text-green-600 font-semibold">Rs {vehicle.price?.toLocaleString()}</p>
+                      <p className="text-sm text-gray-600">{vehicle.year} • {vehicle.city}</p>
+                      <p className="text-sm">{vehicle.make?.name} {vehicle.model?.name}</p>
+                      <p className="text-xs text-gray-500 mt-2">{vehicle.description?.substring(0, 100)}...</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>No vehicles found matching your search criteria.</p>
+              )}
+              {searchResults.filters_applied && (
+                <div className="mt-2 text-sm">
+                  <strong>Filters applied:</strong> {JSON.stringify(searchResults.filters_applied)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tailwind Test */}
       <div className="bg-red-500 text-white p-4 m-4" style={{backgroundColor: 'red', color: 'white', padding: '16px', margin: '16px'}}>
         <p>🧪 Tailwind Test: If you see red background, Tailwind is working!</p>
@@ -75,29 +137,39 @@ const HomePage = () => {
             </p>
             
             {/* Search Bar */}
-            <div className="max-w-4xl mx-auto bg-white rounded-lg p-4 shadow-lg">
+            <form onSubmit={handleSearch} className="max-w-4xl mx-auto bg-white rounded-lg p-4 shadow-lg">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <input
                     type="text"
                     placeholder="Search by make, model, or keyword..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="flex gap-2">
-                  <select className="px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value)}
+                    className="px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
                     <option value="">All Types</option>
-                    <option value="car">Cars</option>
-                    <option value="bike">Bikes</option>
-                    <option value="truck">Trucks</option>
+                    <option value="cars">Cars</option>
+                    <option value="bikes">Bikes</option>
+                    <option value="trucks">Trucks</option>
                   </select>
-                  <button className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                  <button
+                    type="submit"
+                    disabled={isSearching}
+                    className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                  >
                     <Search className="h-5 w-5" />
-                    <span>Search</span>
+                    <span>{isSearching ? 'Searching...' : 'Search'}</span>
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </section>
