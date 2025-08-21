@@ -62,17 +62,17 @@ const HomePage = () => {
   return (
     <div>
       {/* API Test Results */}
-      <div className="bg-green-500 text-white p-4 m-4" style={{backgroundColor: 'green', color: 'white', padding: '16px', margin: '16px'}}>
+      {/* <div className="bg-green-500 text-white p-4 m-4" style={{backgroundColor: 'green', color: 'white', padding: '16px', margin: '16px'}}>
         <h3>🔌 API Connection Test:</h3>
         {apiTest ? (
           <pre>{JSON.stringify(apiTest, null, 2)}</pre>
         ) : (
           <p>Testing API connection...</p>
         )}
-      </div>
+      </div> */}
 
       {/* Categories Test */}
-      <div className="bg-purple-500 text-white p-4 m-4" style={{backgroundColor: 'purple', color: 'white', padding: '16px', margin: '16px'}}>
+      {/* <div className="bg-purple-500 text-white p-4 m-4" style={{backgroundColor: 'purple', color: 'white', padding: '16px', margin: '16px'}}>
         <h3>📂 Categories from Database:</h3>
         {categories.length > 0 ? (
           <ul>
@@ -85,7 +85,7 @@ const HomePage = () => {
         ) : (
           <p>Loading categories...</p>
         )}
-      </div>
+      </div> */}
 
       {/* Search Results */}
       {searchResults && (
@@ -122,9 +122,9 @@ const HomePage = () => {
       )}
 
       {/* Tailwind Test */}
-      <div className="bg-red-500 text-white p-4 m-4" style={{backgroundColor: 'red', color: 'white', padding: '16px', margin: '16px'}}>
+      {/* <div className="bg-red-500 text-white p-4 m-4" style={{backgroundColor: 'red', color: 'white', padding: '16px', margin: '16px'}}>
         <p>🧪 Tailwind Test: If you see red background, Tailwind is working!</p>
-      </div>
+      </div> */}
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
