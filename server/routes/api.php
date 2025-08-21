@@ -19,6 +19,8 @@ Route::get('/categories', function () {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+
+
 // Vehicle routes (public)
 Route::get('/vehicles/search', [VehicleController::class, 'search']);
 Route::get('/vehicles', [VehicleController::class, 'index']);

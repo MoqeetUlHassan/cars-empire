@@ -3,42 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\VehicleSearchRequest;
+use App\Http\Requests\VehicleShowRequest;
 use App\Models\Vehicle;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class VehicleController extends Controller
 {
     /**
      * Search vehicles with filters
      */
-    public function search(Request $request)
+    public function search(VehicleSearchRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'query' => 'nullable|string|max:255',
-            'type' => 'nullable|string|in:car,bike,truck',
-            'category_id' => 'nullable|exists:vehicle_categories,id',
-            'make_id' => 'nullable|exists:vehicle_makes,id',
-            'model_id' => 'nullable|exists:vehicle_models,id',
-            'min_price' => 'nullable|numeric|min:0',
-            'max_price' => 'nullable|numeric|min:0',
-            'year' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-            'city' => 'nullable|string|max:100',
-            'condition' => 'nullable|string|in:new,used,certified_pre_owned',
-            'transmission' => 'nullable|string|in:manual,automatic,cvt,semi_automatic',
-            'fuel_type' => 'nullable|string|in:petrol,diesel,hybrid,electric,cng,lpg',
-            'page' => 'nullable|integer|min:1',
-            'per_page' => 'nullable|integer|min:1|max:50',
-            'sort_by' => 'nullable|string|in:price,year,created_at,views_count',
-            'sort_order' => 'nullable|string|in:asc,desc',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        // Validation is automatically handled by VehicleSearchRequest
 
         $query = Vehicle::with(['category', 'make', 'model', 'images'])
             ->where('status', 'active');
@@ -144,7 +120,7 @@ class VehicleController extends Controller
     /**
      * Get all vehicles (with basic filters)
      */
-    public function index(Request $request)
+    public function index(VehicleSearchRequest $request)
     {
         return $this->search($request);
     }
@@ -152,18 +128,51 @@ class VehicleController extends Controller
     /**
      * Get vehicle by ID
      */
-    public function show($id)
+    public function show(VehicleShowRequest $request, $id)
     {
-        $vehicle = Vehicle::with(['category', 'make', 'model', 'images', 'user'])
+        // Build the query with conditional includes based on request parameters
+        $with = [];
+
+        if ($request->include_images) {
+            $with[] = 'images';
+        }
+
+        if ($request->include_user) {
+            $with[] = 'user';
+        }
+
+        // Always include category, make, and model for basic vehicle info
+        $with = array_merge($with, ['category', 'make', 'model']);
+
+        $vehicle = Vehicle::with($with)
             ->where('status', 'active')
             ->findOrFail($id);
 
-        // Increment view count
-        $vehicle->increment('views_count');
+        // Increment view count if tracking is enabled
+        if ($request->track_view) {
+            $vehicle->increment('views_count');
+        }
 
-        return response()->json([
+        $response = [
             'message' => 'Vehicle retrieved successfully',
             'data' => $vehicle
-        ]);
+        ];
+
+        // Add related vehicles if requested
+        if ($request->include_related) {
+            $relatedVehicles = Vehicle::with(['category', 'make', 'model', 'images'])
+                ->where('status', 'active')
+                ->where('id', '!=', $id)
+                ->where(function ($query) use ($vehicle) {
+                    $query->where('make_id', $vehicle->make_id)
+                          ->orWhere('category_id', $vehicle->category_id);
+                })
+                ->limit(6)
+                ->get();
+
+            $response['related_vehicles'] = $relatedVehicles;
+        }
+
+        return response()->json($response);
     }
 }
