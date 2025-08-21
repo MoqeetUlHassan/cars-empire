@@ -13,6 +13,7 @@ class VehicleModel extends Model
 
     protected $fillable = [
         'make_id',
+        'user_id',
         'name',
         'slug',
         'year_start',
@@ -36,11 +37,40 @@ class VehicleModel extends Model
     }
 
     /**
+     * Get the user that owns the model (for custom models).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Get the vehicles for the model.
      */
     public function vehicles(): HasMany
     {
         return $this->hasMany(Vehicle::class, 'model_id');
+    }
+
+    /**
+     * Scope to get models available to a specific user (global + user's custom)
+     */
+    public function scopeAvailableToUser($query, $userId = null)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->whereNull('user_id'); // Global models
+            if ($userId) {
+                $q->orWhere('user_id', $userId); // User's custom models
+            }
+        });
+    }
+
+    /**
+     * Check if this is a custom model created by a user
+     */
+    public function isCustom(): bool
+    {
+        return !is_null($this->user_id);
     }
 
     /**

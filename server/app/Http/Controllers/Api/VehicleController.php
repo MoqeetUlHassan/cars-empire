@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreVehicleRequest;
+use App\Http\Requests\UpdateVehicleRequest;
 use App\Http\Requests\VehicleSearchRequest;
 use App\Http\Requests\VehicleShowRequest;
 use App\Models\Vehicle;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class VehicleController extends Controller
 {
@@ -174,5 +179,270 @@ class VehicleController extends Controller
         }
 
         return response()->json($response);
+    }
+
+    /**
+     * Store a newly created vehicle in storage.
+     */
+    public function store(StoreVehicleRequest $request)
+    {
+        // Create the vehicle with validated data
+        $vehicleData = $request->validated();
+
+        // Remove images from vehicle data as they'll be handled separately
+        $images = $vehicleData['images'] ?? [];
+        unset($vehicleData['images']);
+
+        $vehicle = Vehicle::create($vehicleData);
+
+        // Handle image uploads
+        if (!empty($images)) {
+            $this->handleImageUploads($vehicle, $images);
+        }
+
+        // Load relationships for response
+        $vehicle->load(['category', 'make', 'model', 'images', 'user']);
+
+        return response()->json([
+            'message' => 'Vehicle listing created successfully',
+            'data' => $vehicle
+        ], 201);
+    }
+
+    /**
+     * Update the specified vehicle in storage.
+     */
+    public function update(UpdateVehicleRequest $request, Vehicle $vehicle)
+    {
+        // Update the vehicle with validated data
+        $vehicleData = $request->validated();
+
+        // Remove images from vehicle data as they'll be handled separately
+        $images = $vehicleData['images'] ?? [];
+        unset($vehicleData['images']);
+
+        $vehicle->update($vehicleData);
+
+        // Handle image uploads if provided
+        if (!empty($images)) {
+            $this->handleImageUploads($vehicle, $images);
+        }
+
+        // Load relationships for response
+        $vehicle->load(['category', 'make', 'model', 'images', 'user']);
+
+        return response()->json([
+            'message' => 'Vehicle listing updated successfully',
+            'data' => $vehicle
+        ]);
+    }
+
+    /**
+     * Remove the specified vehicle from storage.
+     */
+    public function destroy(Vehicle $vehicle)
+    {
+        // Check if user owns the vehicle
+        if ($vehicle->user_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'Unauthorized to delete this vehicle'
+            ], 403);
+        }
+
+        // Delete associated images from storage
+        foreach ($vehicle->images as $image) {
+            if (Storage::disk('public')->exists($image->path)) {
+                Storage::disk('public')->delete($image->path);
+            }
+            $image->delete();
+        }
+
+        // Delete the vehicle
+        $vehicle->delete();
+
+        return response()->json([
+            'message' => 'Vehicle listing deleted successfully'
+        ]);
+    }
+
+    /**
+     * Get vehicles owned by the authenticated user
+     */
+    public function myVehicles(Request $request)
+    {
+        $user = Auth::user();
+
+        // Build query for user's vehicles only
+        $query = Vehicle::where('user_id', $user->id)
+            ->with(['category', 'make', 'model', 'images', 'user']);
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        // Validate sort fields to prevent SQL injection
+        $allowedSortFields = [
+            'created_at', 'updated_at', 'title', 'price',
+            'year', 'views_count', 'favorites_count'
+        ];
+
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // Get paginated results
+        $perPage = min($request->get('per_page', 20), 50); // Max 50 per page
+        $vehicles = $query->paginate($perPage);
+
+        // Transform the data to include additional computed fields
+        $vehicles->getCollection()->transform(function ($vehicle) {
+            // Add primary image
+            $vehicle->primary_image = $vehicle->images->where('is_primary', true)->first()
+                ?: $vehicle->images->first();
+
+            // Add counts (these would normally come from relationships or separate queries)
+            $vehicle->views_count = $vehicle->views_count ?? 0;
+            $vehicle->favorites_count = $vehicle->favorites_count ?? 0;
+
+            // Add formatted price
+            $vehicle->formatted_price = 'Rs ' . number_format($vehicle->price);
+
+            // Add time ago
+            $vehicle->created_at_human = $vehicle->created_at->diffForHumans();
+            $vehicle->updated_at_human = $vehicle->updated_at->diffForHumans();
+
+            return $vehicle;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $vehicles->items(),
+            'pagination' => [
+                'current_page' => $vehicles->currentPage(),
+                'last_page' => $vehicles->lastPage(),
+                'per_page' => $vehicles->perPage(),
+                'total' => $vehicles->total(),
+                'from' => $vehicles->firstItem(),
+                'to' => $vehicles->lastItem(),
+            ],
+            'stats' => [
+                'total_listings' => $vehicles->total(),
+                'active_listings' => Vehicle::where('user_id', $user->id)->where('status', 'active')->count(),
+                'draft_listings' => Vehicle::where('user_id', $user->id)->where('status', 'draft')->count(),
+                'sold_listings' => Vehicle::where('user_id', $user->id)->where('status', 'sold')->count(),
+                'expired_listings' => Vehicle::where('user_id', $user->id)->where('status', 'expired')->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Get user's vehicle statistics
+     */
+    public function myVehicleStats()
+    {
+        $user = Auth::user();
+
+        $stats = [
+            'total_listings' => Vehicle::where('user_id', $user->id)->count(),
+            'active_listings' => Vehicle::where('user_id', $user->id)->where('status', 'active')->count(),
+            'draft_listings' => Vehicle::where('user_id', $user->id)->where('status', 'draft')->count(),
+            'sold_listings' => Vehicle::where('user_id', $user->id)->where('status', 'sold')->count(),
+            'expired_listings' => Vehicle::where('user_id', $user->id)->where('status', 'expired')->count(),
+            'total_views' => Vehicle::where('user_id', $user->id)->sum('views_count'),
+            'total_favorites' => Vehicle::where('user_id', $user->id)->sum('favorites_count'),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+    }
+
+    /**
+     * Handle image uploads for a vehicle
+     */
+    private function handleImageUploads(Vehicle $vehicle, array $images)
+    {
+        foreach ($images as $index => $image) {
+            // Store the image
+            $path = $image->store('vehicles/' . $vehicle->id, 'public');
+
+            // Create image record
+            $vehicle->images()->create([
+                'path' => $path,
+                'is_primary' => $index === 0, // First image is primary
+                'sort_order' => $index + 1,
+            ]);
+        }
+    }
+
+    /**
+     * Upload additional images to existing vehicle
+     */
+    public function uploadImages(Request $request, Vehicle $vehicle)
+    {
+        // Check if user owns the vehicle
+        if ($vehicle->user_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'Unauthorized to upload images for this vehicle'
+            ], 403);
+        }
+
+        $request->validate([
+            'images' => 'required|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        // Check total image count
+        $currentImageCount = $vehicle->images()->count();
+        $newImageCount = count($request->images);
+
+        if ($currentImageCount + $newImageCount > 10) {
+            return response()->json([
+                'message' => 'Cannot upload more than 10 images per vehicle'
+            ], 422);
+        }
+
+        $this->handleImageUploads($vehicle, $request->images);
+
+        $vehicle->load('images');
+
+        return response()->json([
+            'message' => 'Images uploaded successfully',
+            'data' => $vehicle->images
+        ]);
+    }
+
+    /**
+     * Delete a specific image
+     */
+    public function deleteImage(Vehicle $vehicle, $imageId)
+    {
+        // Check if user owns the vehicle
+        if ($vehicle->user_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'Unauthorized to delete images for this vehicle'
+            ], 403);
+        }
+
+        $image = $vehicle->images()->findOrFail($imageId);
+
+        // Delete from storage
+        if (Storage::disk('public')->exists($image->path)) {
+            Storage::disk('public')->delete($image->path);
+        }
+
+        $image->delete();
+
+        return response()->json([
+            'message' => 'Image deleted successfully'
+        ]);
     }
 }

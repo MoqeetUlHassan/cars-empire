@@ -13,6 +13,7 @@ class VehicleMake extends Model
 
     protected $fillable = [
         'category_id',
+        'user_id',
         'name',
         'slug',
         'logo',
@@ -37,11 +38,40 @@ class VehicleMake extends Model
     }
 
     /**
+     * Get the user that owns the make (for custom makes).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Get the models for the make.
      */
     public function models(): HasMany
     {
         return $this->hasMany(VehicleModel::class, 'make_id');
+    }
+
+    /**
+     * Scope to get makes available to a specific user (global + user's custom)
+     */
+    public function scopeAvailableToUser($query, $userId = null)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->whereNull('user_id'); // Global makes
+            if ($userId) {
+                $q->orWhere('user_id', $userId); // User's custom makes
+            }
+        });
+    }
+
+    /**
+     * Check if this is a custom make created by a user
+     */
+    public function isCustom(): bool
+    {
+        return !is_null($this->user_id);
     }
 
     /**

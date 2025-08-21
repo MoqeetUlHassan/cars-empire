@@ -15,8 +15,9 @@ import VehicleDetailPage from './pages/VehicleDetailPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
-import CreateListingPage from './pages/Dashboard/CreateListingPage';
-import MyListingsPage from './pages/Dashboard/MyListingsPage';
+import CreateListingPage from './pages/CreateListingPage';
+import EditListingPage from './pages/EditListingPage';
+import MyListingsPage from './pages/MyListingsPage';
 import ProfilePage from './pages/Dashboard/ProfilePage';
 
 // Create a client
@@ -64,6 +65,7 @@ function App() {
               }>
                 <Route index element={<DashboardPage />} />
                 <Route path="create-listing" element={<CreateListingPage />} />
+                <Route path="edit-listing/:id" element={<EditListingPage />} />
                 <Route path="my-listings" element={<MyListingsPage />} />
                 <Route path="profile" element={<ProfilePage />} />
               </Route>
