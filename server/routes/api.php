@@ -37,6 +37,22 @@ Route::get('/categories', function () {
     ]);
 });
 
+// Category counts (public)
+Route::get('/category-counts', function () {
+    $categories = \App\Models\VehicleCategory::where('is_active', true)->get();
+    $counts = [];
+
+    foreach ($categories as $category) {
+        $counts[$category->slug] = \App\Models\Vehicle::where('category_id', $category->id)
+            ->where('status', 'active')
+            ->count();
+    }
+
+    return response()->json([
+        'data' => $counts
+    ]);
+});
+
 // Public makes (only global ones)
 Route::get('/makes', function (Request $request) {
     $query = \App\Models\VehicleMake::where('is_active', true)
@@ -115,4 +131,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ]
         ]);
     });
+
+
 });

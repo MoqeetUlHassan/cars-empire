@@ -1,40 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Car, Truck, Bike, Star, Users, Shield, Clock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, Car, Truck, Bike, Star, Users, Shield, Clock, ArrowRight } from 'lucide-react';
 import api from '../lib/api';
 
 const HomePage = () => {
-  const [categories, setCategories] = useState([]);
-  const [apiTest, setApiTest] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  useEffect(() => {
-    // Test API connection
-    const testAPI = async () => {
-      try {
-        const response = await api.get('/test');
-        setApiTest(response.data);
-      } catch (error) {
-        setApiTest({ error: 'API connection failed' });
-      }
-    };
+  // Fetch category counts
+  const { data: categoryCountsData, isLoading: countsLoading } = useQuery({
+    queryKey: ['category-counts'],
+    queryFn: async () => {
+      const response = await api.get('/category-counts');
+      return response.data;
+    },
+  });
 
-    // Fetch categories
-    const fetchCategories = async () => {
-      try {
-        const response = await api.get('/categories');
-        setCategories(response.data.data || []);
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      }
-    };
+  const categoryCounts = categoryCountsData?.data;
 
-    testAPI();
-    fetchCategories();
-  }, []);
+  const categories = [
+    {
+      name: 'Cars',
+      slug: 'cars',
+      icon: Car,
+      description: 'Sedans, SUVs, Hatchbacks & More',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      hoverColor: 'group-hover:bg-blue-100',
+    },
+    {
+      name: 'Bikes',
+      slug: 'bikes',
+      icon: Bike,
+      description: 'Motorcycles, Scooters & Two-wheelers',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      hoverColor: 'group-hover:bg-green-100',
+    },
+    {
+      name: 'Trucks',
+      slug: 'trucks',
+      icon: Truck,
+      description: 'Commercial Vehicles & Heavy Duty',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      hoverColor: 'group-hover:bg-orange-100',
+    },
+  ];
+
+
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -179,29 +196,44 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">Browse by Category</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Link to="/vehicles?type=car" className="group">
-              <div className="bg-white rounded-lg shadow-md p-8 text-center hover:shadow-lg transition-shadow">
-                <Car className="h-16 w-16 text-blue-600 mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-semibold mb-2">Cars</h3>
-                <p className="text-gray-600">Find your dream car from thousands of listings</p>
-              </div>
-            </Link>
-            
-            <Link to="/vehicles?type=bike" className="group">
-              <div className="bg-white rounded-lg shadow-md p-8 text-center hover:shadow-lg transition-shadow">
-                <Bike className="h-16 w-16 text-blue-600 mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-semibold mb-2">Bikes</h3>
-                <p className="text-gray-600">Explore motorcycles and scooters</p>
-              </div>
-            </Link>
-            
-            <Link to="/vehicles?type=truck" className="group">
-              <div className="bg-white rounded-lg shadow-md p-8 text-center hover:shadow-lg transition-shadow">
-                <Truck className="h-16 w-16 text-blue-600 mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-semibold mb-2">Commercial</h3>
-                <p className="text-gray-600">Trucks, vans, and commercial vehicles</p>
-              </div>
-            </Link>
+            {categories.map((category) => {
+              const IconComponent = category.icon;
+              return (
+                <Link
+                  key={category.slug}
+                  to={`/vehicles?type=${category.slug}`}
+                  className="group"
+                >
+                  <div className={`${category.bgColor} ${category.hoverColor} rounded-lg shadow-md p-8 text-center hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300`}>
+                    <IconComponent className={`h-16 w-16 ${category.color} mx-auto mb-4 group-hover:scale-110 transition-transform`} />
+                    <h3 className="text-xl font-semibold mb-2 text-gray-900">{category.name}</h3>
+                    <p className="text-gray-600 mb-3">{category.description}</p>
+
+                    {/* Vehicle Count */}
+                    <div className="flex items-center justify-center space-x-2 mb-4">
+                      {countsLoading ? (
+                        <span className="text-sm text-gray-500">Loading...</span>
+                      ) : categoryCounts && categoryCounts[category.slug] !== undefined ? (
+                        <>
+                          <span className="text-sm font-medium text-gray-700">
+                            {categoryCounts[category.slug].toLocaleString()}
+                          </span>
+                          <span className="text-sm text-gray-500">vehicles available</span>
+                        </>
+                      ) : null}
+                    </div>
+
+                    {/* Browse Button */}
+                    <div className="mt-4">
+                      <span className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium ${category.color} bg-white border border-current group-hover:bg-gray-50 transition-colors`}>
+                        Browse {category.name}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
