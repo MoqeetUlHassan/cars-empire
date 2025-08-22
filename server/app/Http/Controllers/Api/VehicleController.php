@@ -189,15 +189,21 @@ class VehicleController extends Controller
         // Create the vehicle with validated data
         $vehicleData = $request->validated();
 
-        // Remove images from vehicle data as they'll be handled separately
+        // Remove images and video from vehicle data as they'll be handled separately
         $images = $vehicleData['images'] ?? [];
-        unset($vehicleData['images']);
+        $video = $vehicleData['video'] ?? null;
+        unset($vehicleData['images'], $vehicleData['video']);
 
         $vehicle = Vehicle::create($vehicleData);
 
         // Handle image uploads
         if (!empty($images)) {
             $this->handleImageUploads($vehicle, $images);
+        }
+
+        // Handle video upload
+        if ($video) {
+            $this->handleVideoUpload($vehicle, $video);
         }
 
         // Load relationships for response
@@ -217,15 +223,23 @@ class VehicleController extends Controller
         // Update the vehicle with validated data
         $vehicleData = $request->validated();
 
-        // Remove images from vehicle data as they'll be handled separately
+        // Remove images and video from vehicle data as they'll be handled separately
         $images = $vehicleData['images'] ?? [];
-        unset($vehicleData['images']);
+        $video = $vehicleData['video'] ?? null;
+        unset($vehicleData['images'], $vehicleData['video']);
 
         $vehicle->update($vehicleData);
 
         // Handle image uploads if provided
         if (!empty($images)) {
             $this->handleImageUploads($vehicle, $images);
+        }
+
+        // Handle video upload if provided
+        if ($video) {
+            // Delete old video if exists
+            $this->deleteVideoFiles($vehicle);
+            $this->handleVideoUpload($vehicle, $video);
         }
 
         // Load relationships for response
@@ -443,6 +457,68 @@ class VehicleController extends Controller
 
         return response()->json([
             'message' => 'Image deleted successfully'
+        ]);
+    }
+
+    /**
+     * Handle video upload for a vehicle
+     */
+    private function handleVideoUpload(Vehicle $vehicle, $video)
+    {
+        // Store the video file
+        $videoPath = $video->store('vehicles/' . $vehicle->id . '/videos', 'public');
+
+        // Get video information
+        $videoSize = $video->getSize();
+
+        // Update vehicle with video information
+        $vehicle->update([
+            'video_path' => $videoPath,
+            'video_size' => $videoSize,
+            'video_duration' => null, // Will be set by frontend or video processing
+        ]);
+    }
+
+    /**
+     * Delete video files for a vehicle
+     */
+    private function deleteVideoFiles(Vehicle $vehicle)
+    {
+        // Delete video file
+        if ($vehicle->video_path && Storage::disk('public')->exists($vehicle->video_path)) {
+            Storage::disk('public')->delete($vehicle->video_path);
+        }
+
+        // Delete video thumbnail
+        if ($vehicle->video_thumbnail_path && Storage::disk('public')->exists($vehicle->video_thumbnail_path)) {
+            Storage::disk('public')->delete($vehicle->video_thumbnail_path);
+        }
+
+        // Clear video fields
+        $vehicle->update([
+            'video_path' => null,
+            'video_thumbnail_path' => null,
+            'video_duration' => null,
+            'video_size' => null,
+        ]);
+    }
+
+    /**
+     * Delete video for a vehicle
+     */
+    public function deleteVideo(Vehicle $vehicle)
+    {
+        // Check if user owns the vehicle
+        if ($vehicle->user_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'Unauthorized to delete video for this vehicle'
+            ], 403);
+        }
+
+        $this->deleteVideoFiles($vehicle);
+
+        return response()->json([
+            'message' => 'Video deleted successfully'
         ]);
     }
 }

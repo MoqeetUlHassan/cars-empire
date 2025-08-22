@@ -99,6 +99,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/vehicles/{vehicle}/images', [VehicleController::class, 'uploadImages'])->middleware('vehicle.owner');
     Route::delete('/vehicles/{vehicle}/images/{imageId}', [VehicleController::class, 'deleteImage'])->middleware('vehicle.owner');
 
+    // Video management
+    Route::delete('/vehicles/{vehicle}/video', [VehicleController::class, 'deleteVideo'])->middleware('vehicle.owner');
+
     // Custom vehicle data (authenticated users get global + their custom data)
     Route::get('/user-makes', [CustomVehicleDataController::class, 'getMakes']);
     Route::get('/user-models', [CustomVehicleDataController::class, 'getModels']);

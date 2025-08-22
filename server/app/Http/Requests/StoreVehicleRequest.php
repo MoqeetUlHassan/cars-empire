@@ -69,9 +69,21 @@ class StoreVehicleRequest extends FormRequest
             'interior_features' => 'nullable|array',
             'interior_features.*' => 'string|max:100',
 
-            // Images
+            // Images (max 10 images, 10MB each)
             'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max per image
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max per image
+
+            // Video clip (max 100MB, 10 seconds duration)
+            'video' => 'sometimes|file|mimes:mp4,mov,avi,wmv,flv,webm|max:102400', // 100MB max
+
+            // Social media links
+            'social_media_links' => 'sometimes|array',
+            'social_media_links.facebook' => 'nullable|url|max:255',
+            'social_media_links.instagram' => 'nullable|url|max:255',
+            'social_media_links.twitter' => 'nullable|url|max:255',
+            'social_media_links.youtube' => 'nullable|url|max:255',
+            'social_media_links.tiktok' => 'nullable|url|max:255',
+            'social_media_links.whatsapp' => 'nullable|string|max:20', // Phone number for WhatsApp
 
             // Listing options
             'is_featured' => 'nullable|boolean',
@@ -122,7 +134,16 @@ class StoreVehicleRequest extends FormRequest
             'images.max' => 'You can upload maximum 10 images',
             'images.*.image' => 'All files must be images',
             'images.*.mimes' => 'Images must be jpeg, png, jpg, or gif format',
-            'images.*.max' => 'Each image must be less than 5MB',
+            'images.*.max' => 'Each image must be less than 10MB',
+            'video.file' => 'Video must be a valid file',
+            'video.mimes' => 'Video must be mp4, mov, avi, wmv, flv, or webm format',
+            'video.max' => 'Video file must be less than 100MB',
+            'social_media_links.facebook.url' => 'Facebook link must be a valid URL',
+            'social_media_links.instagram.url' => 'Instagram link must be a valid URL',
+            'social_media_links.twitter.url' => 'Twitter link must be a valid URL',
+            'social_media_links.youtube.url' => 'YouTube link must be a valid URL',
+            'social_media_links.tiktok.url' => 'TikTok link must be a valid URL',
+            'social_media_links.whatsapp.string' => 'WhatsApp number must be a valid phone number',
             'expires_at.after' => 'Expiry date must be in the future',
         ];
     }

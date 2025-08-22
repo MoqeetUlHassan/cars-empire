@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { 
-  Car, 
-  Upload, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  DollarSign, 
+import {
+  Car,
+  Upload,
+  MapPin,
+  Phone,
+  Mail,
+  DollarSign,
   Calendar,
   Settings,
   Fuel,
@@ -15,7 +15,15 @@ import {
   FileText,
   User,
   Save,
-  Eye
+  Eye,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
+  MessageCircle,
+  Video,
+  Play,
+  X
 } from 'lucide-react';
 import api from '../lib/api';
 
@@ -62,12 +70,24 @@ const CreateListingPage = () => {
     exterior_features: [],
     interior_features: [],
     
-    // Images
+    // Images and Video
     images: [],
+    video: null,
+
+    // Social Media Links
+    social_media_links: {
+      facebook: '',
+      instagram: '',
+      twitter: '',
+      youtube: '',
+      tiktok: '',
+      whatsapp: '',
+    },
   });
 
   const [errors, setErrors] = useState({});
   const [imagePreview, setImagePreview] = useState([]);
+  const [videoPreview, setVideoPreview] = useState(null);
   const [showCustomMakeForm, setShowCustomMakeForm] = useState(false);
   const [showCustomModelForm, setShowCustomModelForm] = useState(false);
   const [customMakeName, setCustomMakeName] = useState('');
@@ -218,9 +238,52 @@ const CreateListingPage = () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
-    
+
     URL.revokeObjectURL(imagePreview[index]);
     setImagePreview(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleVideoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (100MB = 104857600 bytes)
+    if (file.size > 104857600) {
+      alert('Video file must be less than 100MB');
+      return;
+    }
+
+    // Check duration (will be validated on backend)
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      if (video.duration > 10) {
+        alert('Video duration must be 10 seconds or less');
+        return;
+      }
+
+      setFormData(prev => ({ ...prev, video: file }));
+      setVideoPreview(URL.createObjectURL(file));
+    };
+    video.src = URL.createObjectURL(file);
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setFormData(prev => ({ ...prev, video: null }));
+    setVideoPreview(null);
+  };
+
+  const handleSocialMediaChange = (platform, value) => {
+    setFormData(prev => ({
+      ...prev,
+      social_media_links: {
+        ...prev.social_media_links,
+        [platform]: value
+      }
+    }));
   };
 
   const handleFeatureAdd = (featureType, value) => {
@@ -263,7 +326,7 @@ const CreateListingPage = () => {
   };
 
   const nextStep = () => {
-    if (currentStep < 5) setCurrentStep(currentStep + 1);
+    if (currentStep < 7) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -275,7 +338,9 @@ const CreateListingPage = () => {
     { number: 2, title: 'Details', icon: Settings },
     { number: 3, title: 'Location', icon: MapPin },
     { number: 4, title: 'Contact', icon: User },
-    { number: 5, title: 'Images', icon: Upload },
+    { number: 5, title: 'Social Media', icon: MessageCircle },
+    { number: 6, title: 'Video', icon: Video },
+    { number: 7, title: 'Images', icon: Upload },
   ];
 
   return (
@@ -853,8 +918,162 @@ const CreateListingPage = () => {
             </div>
           )}
 
-          {/* Step 5: Images */}
+          {/* Step 5: Social Media Links */}
           {currentStep === 5 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold mb-4">Social Media Links (Optional)</h2>
+              <p className="text-gray-600 mb-6">Add your social media links to help buyers connect with you</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Facebook */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Facebook className="inline h-4 w-4 mr-2 text-blue-600" />
+                    Facebook Profile/Page
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.social_media_links.facebook}
+                    onChange={(e) => handleSocialMediaChange('facebook', e.target.value)}
+                    placeholder="https://facebook.com/yourprofile"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Instagram */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Instagram className="inline h-4 w-4 mr-2 text-pink-600" />
+                    Instagram Profile
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.social_media_links.instagram}
+                    onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
+                    placeholder="https://instagram.com/yourprofile"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Twitter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Twitter className="inline h-4 w-4 mr-2 text-blue-400" />
+                    Twitter Profile
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.social_media_links.twitter}
+                    onChange={(e) => handleSocialMediaChange('twitter', e.target.value)}
+                    placeholder="https://twitter.com/yourprofile"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* YouTube */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Youtube className="inline h-4 w-4 mr-2 text-red-600" />
+                    YouTube Channel
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.social_media_links.youtube}
+                    onChange={(e) => handleSocialMediaChange('youtube', e.target.value)}
+                    placeholder="https://youtube.com/yourchannel"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* TikTok */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Video className="inline h-4 w-4 mr-2 text-black" />
+                    TikTok Profile
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.social_media_links.tiktok}
+                    onChange={(e) => handleSocialMediaChange('tiktok', e.target.value)}
+                    placeholder="https://tiktok.com/@yourprofile"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* WhatsApp */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <MessageCircle className="inline h-4 w-4 mr-2 text-green-600" />
+                    WhatsApp Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.social_media_links.whatsapp}
+                    onChange={(e) => handleSocialMediaChange('whatsapp', e.target.value)}
+                    placeholder="+92 300 1234567"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6: Video Upload */}
+          {currentStep === 6 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold mb-4">Video Advertisement (Optional)</h2>
+              <p className="text-gray-600 mb-6">Upload a short video (max 10 seconds, 100MB) to showcase your vehicle</p>
+
+              {!videoPreview ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Video
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <Video className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="mt-4">
+                      <label htmlFor="video" className="cursor-pointer">
+                        <span className="mt-2 block text-sm font-medium text-gray-900">
+                          Click to upload video
+                        </span>
+                        <span className="mt-1 block text-sm text-gray-500">
+                          MP4, MOV, AVI up to 100MB (max 10 seconds)
+                        </span>
+                      </label>
+                      <input
+                        id="video"
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoChange}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Video Preview</h3>
+                  <div className="relative">
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="w-full max-w-md h-64 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeVideo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 7: Images */}
+          {currentStep === 7 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold mb-4">Upload Images</h2>
 
@@ -963,7 +1182,7 @@ const CreateListingPage = () => {
               Previous
             </button>
             
-            {currentStep < 5 ? (
+            {currentStep < 7 ? (
               <button
                 type="button"
                 onClick={nextStep}

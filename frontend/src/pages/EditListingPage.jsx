@@ -46,6 +46,14 @@ const EditListingPage = () => {
         show_phone: data.data.show_phone || true,
         show_email: data.data.show_email || false,
         status: data.data.status || 'active',
+        social_media_links: data.data.social_media_links || {
+          facebook: '',
+          instagram: '',
+          twitter: '',
+          youtube: '',
+          tiktok: '',
+          whatsapp: '',
+        },
       });
     },
   });
@@ -308,6 +316,68 @@ const EditListingPage = () => {
                 <option value="expired">Expired</option>
               </select>
               {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status[0]}</p>}
+            </div>
+          </div>
+
+          {/* Social Media Links */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Social Media Links (Optional)</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                <input
+                  type="url"
+                  value={formData.social_media_links?.facebook || ''}
+                  onChange={(e) => handleInputChange('social_media_links', {
+                    ...formData.social_media_links,
+                    facebook: e.target.value
+                  })}
+                  placeholder="https://facebook.com/yourprofile"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
+                <input
+                  type="url"
+                  value={formData.social_media_links?.instagram || ''}
+                  onChange={(e) => handleInputChange('social_media_links', {
+                    ...formData.social_media_links,
+                    instagram: e.target.value
+                  })}
+                  placeholder="https://instagram.com/yourprofile"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={formData.social_media_links?.whatsapp || ''}
+                  onChange={(e) => handleInputChange('social_media_links', {
+                    ...formData.social_media_links,
+                    whatsapp: e.target.value
+                  })}
+                  placeholder="+92 300 1234567"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">YouTube</label>
+                <input
+                  type="url"
+                  value={formData.social_media_links?.youtube || ''}
+                  onChange={(e) => handleInputChange('social_media_links', {
+                    ...formData.social_media_links,
+                    youtube: e.target.value
+                  })}
+                  placeholder="https://youtube.com/yourchannel"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
 
