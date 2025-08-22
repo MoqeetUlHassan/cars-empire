@@ -53,6 +53,35 @@ Route::get('/category-counts', function () {
     ]);
 });
 
+// Featured vehicles (public)
+Route::get('/featured-vehicles', function () {
+    $featuredVehicles = \App\Models\Vehicle::where('status', 'active')
+        ->where('is_featured', true)
+        ->with(['category', 'make', 'model', 'images', 'user'])
+        ->orderBy('created_at', 'desc')
+        ->limit(6)
+        ->get();
+
+    // Transform the data to include additional computed fields
+    $featuredVehicles->transform(function ($vehicle) {
+        // Add primary image
+        $vehicle->primary_image = $vehicle->images->where('is_primary', true)->first()
+            ?: $vehicle->images->first();
+
+        // Add formatted price
+        $vehicle->formatted_price = 'Rs ' . number_format($vehicle->price);
+
+        // Add time ago
+        $vehicle->created_at_human = $vehicle->created_at->diffForHumans();
+
+        return $vehicle;
+    });
+
+    return response()->json([
+        'data' => $featuredVehicles
+    ]);
+});
+
 // Public makes (only global ones)
 Route::get('/makes', function (Request $request) {
     $query = \App\Models\VehicleMake::where('is_active', true)

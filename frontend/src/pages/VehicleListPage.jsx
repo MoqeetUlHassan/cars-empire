@@ -17,6 +17,7 @@ const VehicleListPage = () => {
     condition: searchParams.get('condition') || '',
     transmission: searchParams.get('transmission') || '',
     fuel_type: searchParams.get('fuel_type') || '',
+    featured: searchParams.get('featured') || '',
     sort_by: searchParams.get('sort_by') || 'created_at',
     sort_order: searchParams.get('sort_order') || 'desc',
     page: parseInt(searchParams.get('page')) || 1,

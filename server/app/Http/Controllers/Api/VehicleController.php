@@ -94,6 +94,11 @@ class VehicleController extends Controller
             $query->where('fuel_type', $request->fuel_type);
         }
 
+        // Featured filter
+        if ($request->filled('featured') && $request->featured === 'true') {
+            $query->where('is_featured', true);
+        }
+
         // Sorting
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
@@ -117,7 +122,7 @@ class VehicleController extends Controller
             'filters_applied' => $request->only([
                 'query', 'type', 'category_id', 'make_id', 'model_id',
                 'min_price', 'max_price', 'year', 'city', 'condition',
-                'transmission', 'fuel_type'
+                'transmission', 'fuel_type', 'featured'
             ])
         ]);
     }
