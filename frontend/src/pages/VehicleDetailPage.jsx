@@ -21,7 +21,7 @@ import {
   Eye,
   Car
 } from 'lucide-react';
-import api from '../lib/api';
+import api, { getStorageUrl, getPlaceholderImage } from '../lib/api';
 
 const VehicleDetailPage = () => {
   const { id } = useParams();
@@ -80,7 +80,7 @@ const VehicleDetailPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Car className="h-12 w-12 animate-pulse text-blue-600 mx-auto mb-4" />
+          <Car className="h-12 w-12 animate-pulse text-teal-600 mx-auto mb-4" style={{color: '#008080'}} />
           <p className="text-gray-600">Loading vehicle details...</p>
         </div>
       </div>
@@ -96,7 +96,10 @@ const VehicleDetailPage = () => {
           <p className="text-gray-600 mb-4">The vehicle you're looking for doesn't exist or has been removed.</p>
           <Link
             to="/vehicles"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700"
+            style={{backgroundColor: '#008080'}}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#006666'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#008080'}
           >
             Browse Vehicles
           </Link>
@@ -125,7 +128,7 @@ const VehicleDetailPage = () => {
               {showVideo && vehicle.video_path ? (
                 <div className="relative">
                   <video
-                    src={`http://127.0.0.1:8000/storage/${vehicle.video_path}`}
+                    src={getStorageUrl(vehicle.video_path)}
                     controls
                     className="w-full h-96 object-cover"
                     autoPlay
@@ -142,8 +145,8 @@ const VehicleDetailPage = () => {
                   <img
                     src={
                       vehicle.images?.[selectedImageIndex]?.path
-                        ? `http://127.0.0.1:8000/storage/${vehicle.images[selectedImageIndex].path}`
-                        : 'https://via.placeholder.com/800x600/e5e7eb/6b7280?text=No+Image'
+                        ? getStorageUrl(vehicle.images[selectedImageIndex].path)
+                        : getPlaceholderImage(800, 600, 'No Image')
                     }
                     alt={vehicle.title}
                     className="w-full h-96 object-cover"
@@ -151,7 +154,10 @@ const VehicleDetailPage = () => {
                   {vehicle.video_path && (
                     <button
                       onClick={() => setShowVideo(true)}
-                      className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 flex items-center space-x-1"
+                      className="absolute top-4 right-4 bg-teal-600 text-white px-3 py-1 rounded-md text-sm hover:bg-teal-700 flex items-center space-x-1"
+                      style={{backgroundColor: '#008080'}}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#006666'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#008080'}
                     >
                       <Play className="h-4 w-4" />
                       <span>Play Video</span>
@@ -173,12 +179,12 @@ const VehicleDetailPage = () => {
                     }}
                     className={`relative rounded-lg overflow-hidden ${
                       selectedImageIndex === index && !showVideo
-                        ? 'ring-2 ring-blue-500'
+                        ? 'ring-2 ring-teal-500'
                         : ''
                     }`}
                   >
                     <img
-                      src={`http://127.0.0.1:8000/storage/${image.path}`}
+                      src={getStorageUrl(image.path)}
                       alt={`${vehicle.title} ${index + 1}`}
                       className="w-full h-16 object-cover"
                     />
@@ -188,7 +194,7 @@ const VehicleDetailPage = () => {
                   <button
                     onClick={() => setShowVideo(true)}
                     className={`relative rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center ${
-                      showVideo ? 'ring-2 ring-blue-500' : ''
+                      showVideo ? 'ring-2 ring-teal-500' : ''
                     }`}
                   >
                     <Play className="h-6 w-6 text-white" />
@@ -250,7 +256,10 @@ const VehicleDetailPage = () => {
                 {vehicle.show_phone && vehicle.contact_phone && (
                   <a
                     href={`tel:${vehicle.contact_phone}`}
-                    className="flex items-center text-blue-600 hover:text-blue-700"
+                    className="flex items-center text-teal-600 hover:text-teal-700"
+                    style={{color: '#008080'}}
+                    onMouseEnter={(e) => e.target.style.color = '#006666'}
+                    onMouseLeave={(e) => e.target.style.color = '#008080'}
                   >
                     <Phone className="h-4 w-4 mr-2" />
                     <span>{vehicle.contact_phone}</span>
@@ -260,7 +269,10 @@ const VehicleDetailPage = () => {
                 {vehicle.show_email && vehicle.contact_email && (
                   <a
                     href={`mailto:${vehicle.contact_email}`}
-                    className="flex items-center text-blue-600 hover:text-blue-700"
+                    className="flex items-center text-teal-600 hover:text-teal-700"
+                    style={{color: '#008080'}}
+                    onMouseEnter={(e) => e.target.style.color = '#006666'}
+                    onMouseLeave={(e) => e.target.style.color = '#008080'}
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     <span>{vehicle.contact_email}</span>

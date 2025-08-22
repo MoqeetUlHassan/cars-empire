@@ -173,11 +173,18 @@ const CreateListingPage = () => {
           data.images.forEach((image, index) => {
             formDataToSend.append(`images[${index}]`, image);
           });
+        } else if (key === 'social_media_links') {
+          // Handle social media links as nested object
+          Object.keys(data[key]).forEach(platform => {
+            if (data[key][platform]) {
+              formDataToSend.append(`social_media_links[${platform}]`, data[key][platform]);
+            }
+          });
         } else if (Array.isArray(data[key])) {
           data[key].forEach((item, index) => {
             formDataToSend.append(`${key}[${index}]`, item);
           });
-        } else {
+        } else if (data[key] !== null && data[key] !== undefined) {
           formDataToSend.append(key, data[key]);
         }
       });

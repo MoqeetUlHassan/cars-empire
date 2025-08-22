@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Filter, Grid, List, MapPin, Calendar, Fuel, Settings } from 'lucide-react';
-import api from '../lib/api';
+import { Search, Filter, Grid, List, MapPin, Calendar, Fuel, Settings, Play } from 'lucide-react';
+import api, { getStorageUrl, getPlaceholderImage } from '../lib/api';
 
 const VehicleListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('list');
   const [filters, setFilters] = useState({
     query: searchParams.get('query') || '',
     type: searchParams.get('type') || '',
@@ -111,14 +111,22 @@ const VehicleListPage = () => {
 
               {/* Search */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                <input
-                  type="text"
-                  placeholder="Make, model, keyword..."
-                  value={filters.query}
-                  onChange={(e) => handleFilterChange('query', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Vehicles
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search by make, model, or keyword... (e.g., Toyota, Corolla, Honda)"
+                    value={filters.query}
+                    onChange={(e) => handleFilterChange('query', e.target.value)}
+                    className="w-full px-3 py-3 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  />
+                  <Search className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Search works across vehicle titles, descriptions, makes, and models
+                </p>
               </div>
 
               {/* Vehicle Type */}
@@ -127,7 +135,7 @@ const VehicleListPage = () => {
                 <select
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="">All Types</option>
                   <option value="cars">Cars</option>
@@ -145,14 +153,14 @@ const VehicleListPage = () => {
                     placeholder="Min"
                     value={filters.min_price}
                     onChange={(e) => handleFilterChange('min_price', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                   <input
                     type="number"
                     placeholder="Max"
                     value={filters.max_price}
                     onChange={(e) => handleFilterChange('max_price', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
@@ -165,7 +173,7 @@ const VehicleListPage = () => {
                   placeholder="e.g. 2020"
                   value={filters.year}
                   onChange={(e) => handleFilterChange('year', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -177,7 +185,7 @@ const VehicleListPage = () => {
                   placeholder="e.g. Lahore"
                   value={filters.city}
                   onChange={(e) => handleFilterChange('city', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -187,7 +195,7 @@ const VehicleListPage = () => {
                 <select
                   value={filters.condition}
                   onChange={(e) => handleFilterChange('condition', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="">All Conditions</option>
                   <option value="new">New</option>
@@ -206,7 +214,7 @@ const VehicleListPage = () => {
                     handleFilterChange('sort_by', sortBy);
                     handleFilterChange('sort_order', sortOrder);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="created_at-desc">Newest First</option>
                   <option value="created_at-asc">Oldest First</option>
@@ -273,21 +281,64 @@ const VehicleListPage = () => {
   );
 };
 
-// Vehicle Card Component
+// Vehicle Card Component with Video Hover
 const VehicleCard = ({ vehicle, viewMode, formatPrice }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   const cardClass = viewMode === 'grid'
     ? 'bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden'
     : 'bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden flex';
 
   return (
-    <Link to={`/vehicles/${vehicle.id}`} className={cardClass}>
-      {/* Image */}
-      <div className={viewMode === 'grid' ? 'aspect-w-16 aspect-h-9' : 'w-48 h-32 flex-shrink-0'}>
-        <img
-          src={vehicle.primary_image?.path || '/placeholder-car.svg'}
-          alt={vehicle.title}
-          className="w-full h-full object-cover"
-        />
+    <Link
+      to={`/vehicles/${vehicle.id}`}
+      className={cardClass}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Media Section with Video Hover */}
+      <div className={viewMode === 'grid' ? 'aspect-w-16 aspect-h-9 relative' : 'w-48 h-32 flex-shrink-0 relative'}>
+        {isHovered && vehicle.video_path ? (
+          <video
+            src={getStorageUrl(vehicle.video_path)}
+            autoPlay
+            muted
+            loop
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <img
+            src={
+              vehicle.primary_image?.path
+                ? getStorageUrl(vehicle.primary_image.path)
+                : getPlaceholderImage(400, 300, 'No Image')
+            }
+            alt={vehicle.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.src = getPlaceholderImage(400, 300, 'No Image');
+            }}
+          />
+        )}
+
+        {/* Video Indicator */}
+        {vehicle.video_path && (
+          <div className="absolute top-2 right-2">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-800" style={{backgroundColor: '#ccfbf1', color: '#008080'}}>
+              <Play className="h-3 w-3 mr-1" />
+              Video
+            </span>
+          </div>
+        )}
+
+        {/* Hover Instruction */}
+        {vehicle.video_path && !isHovered && (
+          <div className="absolute bottom-2 right-2">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-black bg-opacity-50 text-white">
+              Hover to play
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}

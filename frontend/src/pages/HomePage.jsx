@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Car, Truck, Bike, Star, Users, Shield, Clock, ArrowRight, Calendar, MapPin, Eye, Heart, Play } from 'lucide-react';
-import api from '../lib/api';
+import api, { getStorageUrl, getPlaceholderImage } from '../lib/api';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
 
   // Fetch category counts
   const { data: categoryCountsData, isLoading: countsLoading } = useQuery({
@@ -37,129 +36,65 @@ const HomePage = () => {
       slug: 'cars',
       icon: Car,
       description: 'Sedans, SUVs, Hatchbacks & More',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      hoverColor: 'group-hover:bg-blue-100',
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-50',
+      hoverColor: 'group-hover:bg-teal-100',
+      customColor: '#008080',
+      customBg: '#f0fdfa',
+      customHover: '#ccfbf1',
     },
     {
       name: 'Bikes',
       slug: 'bikes',
       icon: Bike,
       description: 'Motorcycles, Scooters & Two-wheelers',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      hoverColor: 'group-hover:bg-green-100',
+      color: 'text-teal-700',
+      bgColor: 'bg-teal-100',
+      hoverColor: 'group-hover:bg-teal-200',
+      customColor: '#0f766e',
+      customBg: '#ccfbf1',
+      customHover: '#99f6e4',
     },
     {
       name: 'Trucks',
       slug: 'trucks',
       icon: Truck,
       description: 'Commercial Vehicles & Heavy Duty',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      hoverColor: 'group-hover:bg-orange-100',
+      color: 'text-teal-800',
+      bgColor: 'bg-teal-200',
+      hoverColor: 'group-hover:bg-teal-300',
+      customColor: '#115e59',
+      customBg: '#99f6e4',
+      customHover: '#5eead4',
     },
   ];
 
-
-
-  const handleSearch = async (e) => {
+  const handleSearch = (e) => {
     e.preventDefault();
-    setIsSearching(true);
-
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) {
-        params.append('query', searchQuery.trim());
-      }
-      if (selectedType) {
-        params.append('type', selectedType);
-      }
-      params.append('per_page', '6'); // Limit results for demo
-
-      const response = await api.get(`/vehicles/search?${params.toString()}`);
-      setSearchResults(response.data);
-    } catch (error) {
-      console.error('Search failed:', error);
-      setSearchResults({ error: 'Search failed. Please try again.' });
-    } finally {
-      setIsSearching(false);
+    
+    // Build search parameters
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) {
+      params.append('query', searchQuery.trim());
     }
+    if (selectedType) {
+      params.append('type', selectedType);
+    }
+    
+    // Navigate to vehicles page with search parameters
+    navigate(`/vehicles?${params.toString()}`);
   };
+
   return (
     <div>
-      {/* API Test Results */}
-      {/* <div className="bg-green-500 text-white p-4 m-4" style={{backgroundColor: 'green', color: 'white', padding: '16px', margin: '16px'}}>
-        <h3>🔌 API Connection Test:</h3>
-        {apiTest ? (
-          <pre>{JSON.stringify(apiTest, null, 2)}</pre>
-        ) : (
-          <p>Testing API connection...</p>
-        )}
-      </div> */}
-
-      {/* Categories Test */}
-      {/* <div className="bg-purple-500 text-white p-4 m-4" style={{backgroundColor: 'purple', color: 'white', padding: '16px', margin: '16px'}}>
-        <h3>📂 Categories from Database:</h3>
-        {categories.length > 0 ? (
-          <ul>
-            {categories.map(category => (
-              <li key={category.id}>
-                {category.name} - {category.description}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Loading categories...</p>
-        )}
-      </div> */}
-
-      {/* Search Results */}
-      {/* {searchResults && (
-        <div className="bg-yellow-500 text-black p-4 m-4" style={{backgroundColor: 'yellow', color: 'black', padding: '16px', margin: '16px'}}>
-          <h3>🔍 Search Results:</h3>
-          {searchResults.error ? (
-            <p className="text-red-600">{searchResults.error}</p>
-          ) : (
-            <div>
-              <p><strong>Found:</strong> {searchResults.pagination?.total || 0} vehicles</p>
-              {searchResults.data && searchResults.data.length > 0 ? (
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {searchResults.data.map(vehicle => (
-                    <div key={vehicle.id} className="bg-white p-4 rounded-lg shadow">
-                      <h4 className="font-bold text-lg">{vehicle.title}</h4>
-                      <p className="text-green-600 font-semibold">Rs {vehicle.price?.toLocaleString()}</p>
-                      <p className="text-sm text-gray-600">{vehicle.year} • {vehicle.city}</p>
-                      <p className="text-sm">{vehicle.make?.name} {vehicle.model?.name}</p>
-                      <p className="text-xs text-gray-500 mt-2">{vehicle.description?.substring(0, 100)}...</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>No vehicles found matching your search criteria.</p>
-              )}
-              {searchResults.filters_applied && (
-                <div className="mt-2 text-sm">
-                  <strong>Filters applied:</strong> {JSON.stringify(searchResults.filters_applied)}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )} */}
-
-      {/* Tailwind Test */}
-      {/* <div className="bg-red-500 text-white p-4 m-4" style={{backgroundColor: 'red', color: 'white', padding: '16px', margin: '16px'}}>
-        <p>🧪 Tailwind Test: If you see red background, Tailwind is working!</p>
-      </div> */}
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+      <section className="bg-gradient-to-r from-teal-600 to-teal-800 text-white py-20" style={{background: 'linear-gradient(to right, #008080, #006666)'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Find Your Perfect Vehicle
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
+            <p className="text-xl md:text-2xl mb-8 text-teal-100">
               Pakistan's most trusted vehicle marketplace
             </p>
             
@@ -169,17 +104,17 @@ const HomePage = () => {
                 <div className="flex-1">
                   <input
                     type="text"
-                    placeholder="Search by make, model, or keyword..."
+                    placeholder="Search by make, model, or keyword... (e.g., Toyota, Corolla, Honda)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={selectedType}
                     onChange={(e) => setSelectedType(e.target.value)}
-                    className="px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-4 py-3 text-gray-900 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="">All Types</option>
                     <option value="cars">Cars</option>
@@ -188,15 +123,41 @@ const HomePage = () => {
                   </select>
                   <button
                     type="submit"
-                    disabled={isSearching}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                    className="bg-teal-600 text-white px-8 py-3 rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-2"
+                    style={{backgroundColor: '#008080'}}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#006666'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#008080'}
                   >
                     <Search className="h-5 w-5" />
-                    <span>{isSearching ? 'Searching...' : 'Search'}</span>
+                    <span>Search</span>
                   </button>
                 </div>
               </div>
             </form>
+
+            {/* Popular Searches */}
+            <div className="max-w-4xl mx-auto mt-6">
+              <p className="text-teal-100 text-sm mb-3">Popular searches:</p>
+              <div className="flex flex-wrap gap-2">
+                {['Toyota Corolla', 'Honda Civic', 'Suzuki Alto', 'Honda CD 70', 'Yamaha YBR', 'Hilux', 'Land Cruiser'].map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => {
+                      setSearchQuery(term);
+                      const params = new URLSearchParams();
+                      params.append('query', term);
+                      navigate(`/vehicles?${params.toString()}`);
+                    }}
+                    className="px-3 py-1 bg-teal-500 bg-opacity-20 text-teal-100 rounded-full text-sm hover:bg-opacity-30 transition-colors"
+                    style={{backgroundColor: 'rgba(0, 128, 128, 0.2)'}}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 128, 128, 0.3)'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(0, 128, 128, 0.2)'}
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -206,9 +167,12 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-3xl font-bold text-gray-900">Featured Vehicles</h2>
-            <Link
-              to="/vehicles?featured=true"
-              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+            <Link 
+              to="/vehicles?featured=true" 
+              className="text-teal-600 hover:text-teal-800 font-medium flex items-center"
+              style={{color: '#008080'}}
+              onMouseEnter={(e) => e.target.style.color = '#006666'}
+              onMouseLeave={(e) => e.target.style.color = '#008080'}
             >
               View All Featured
               <ArrowRight className="h-4 w-4 ml-1" />
@@ -237,33 +201,24 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Google Ads Section 1 - Leaderboard */}
+      {/* Google Ads Section */}
       <section className="py-8 bg-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-4">
             <span className="text-xs text-gray-500 uppercase tracking-wide">Advertisement</span>
           </div>
-
-          {/* Google AdSense Leaderboard */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="max-w-6xl mx-auto">
-              {/* Replace this div with actual Google AdSense code */}
-              <GoogleAdPlaceholder
-                size="728x90"
-                type="Leaderboard"
-                description="Perfect for header/footer placement"
-              />
-
-              {/*
-              Example Google AdSense code to replace the placeholder:
-
-              <ins className="adsbygoogle"
-                   style={{display: 'block'}}
-                   data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                   data-ad-slot="XXXXXXXXXX"
-                   data-ad-format="auto"
-                   data-full-width-responsive="true"></ins>
-              */}
+              <div 
+                className="bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border border-gray-300"
+                style={{ width: '728px', height: '90px', margin: '0 auto' }}
+              >
+                <div className="text-center p-4">
+                  <div className="text-xs text-gray-600 font-medium">Google AdSense</div>
+                  <div className="text-xs text-gray-500">728x90 Leaderboard</div>
+                  <div className="text-xs text-gray-400 mt-1">Replace with actual ad code</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -282,8 +237,16 @@ const HomePage = () => {
                   to={`/vehicles?type=${category.slug}`}
                   className="group"
                 >
-                  <div className={`${category.bgColor} ${category.hoverColor} rounded-lg shadow-md p-8 text-center hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300`}>
-                    <IconComponent className={`h-16 w-16 ${category.color} mx-auto mb-4 group-hover:scale-110 transition-transform`} />
+                  <div
+                    className={`${category.bgColor} ${category.hoverColor} rounded-lg shadow-md p-8 text-center hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300`}
+                    style={{backgroundColor: category.customBg}}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = category.customHover}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = category.customBg}
+                  >
+                    <IconComponent
+                      className={`h-16 w-16 ${category.color} mx-auto mb-4 group-hover:scale-110 transition-transform`}
+                      style={{color: category.customColor}}
+                    />
                     <h3 className="text-xl font-semibold mb-2 text-gray-900">{category.name}</h3>
                     <p className="text-gray-600 mb-3">{category.description}</p>
 
@@ -303,7 +266,10 @@ const HomePage = () => {
 
                     {/* Browse Button */}
                     <div className="mt-4">
-                      <span className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium ${category.color} bg-white border border-current group-hover:bg-gray-50 transition-colors`}>
+                      <span
+                        className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium ${category.color} bg-white border border-current group-hover:bg-gray-50 transition-colors`}
+                        style={{color: category.customColor, borderColor: category.customColor}}
+                      >
                         Browse {category.name}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </span>
@@ -316,58 +282,38 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Google Ads Section 2 - Large Rectangle */}
-      <section className="py-8 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-4">
-            <span className="text-xs text-gray-500 uppercase tracking-wide">Advertisement</span>
-          </div>
-
-          <div className="flex justify-center">
-            <div className="bg-gray-50 rounded-lg shadow-sm overflow-hidden">
-              {/* Google AdSense Large Rectangle */}
-              <GoogleAdPlaceholder
-                size="336x280"
-                type="Large Rectangle"
-                description="High-performing ad format"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Features Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">Why Choose Cars Empire?</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Users className="h-8 w-8 text-blue-600" />
+              <div className="bg-teal-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center" style={{backgroundColor: '#ccfbf1'}}>
+                <Users className="h-8 w-8 text-teal-600" style={{color: '#008080'}} />
               </div>
               <h3 className="text-lg font-semibold mb-2">Trusted Community</h3>
               <p className="text-gray-600">Join thousands of verified buyers and sellers</p>
             </div>
-            
+
             <div className="text-center">
-              <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Shield className="h-8 w-8 text-blue-600" />
+              <div className="bg-teal-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center" style={{backgroundColor: '#ccfbf1'}}>
+                <Shield className="h-8 w-8 text-teal-600" style={{color: '#008080'}} />
               </div>
               <h3 className="text-lg font-semibold mb-2">Secure Transactions</h3>
               <p className="text-gray-600">Safe and secure payment processing</p>
             </div>
-            
+
             <div className="text-center">
-              <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Star className="h-8 w-8 text-blue-600" />
+              <div className="bg-teal-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center" style={{backgroundColor: '#ccfbf1'}}>
+                <Star className="h-8 w-8 text-teal-600" style={{color: '#008080'}} />
               </div>
               <h3 className="text-lg font-semibold mb-2">Quality Listings</h3>
               <p className="text-gray-600">Verified and detailed vehicle information</p>
             </div>
-            
+
             <div className="text-center">
-              <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Clock className="h-8 w-8 text-blue-600" />
+              <div className="bg-teal-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center" style={{backgroundColor: '#ccfbf1'}}>
+                <Clock className="h-8 w-8 text-teal-600" style={{color: '#008080'}} />
               </div>
               <h3 className="text-lg font-semibold mb-2">24/7 Support</h3>
               <p className="text-gray-600">Round-the-clock customer assistance</p>
@@ -377,15 +323,16 @@ const HomePage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-blue-600 text-white py-16">
+      <section className="bg-teal-600 text-white py-16" style={{backgroundColor: '#008080'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Sell Your Vehicle?</h2>
-          <p className="text-xl mb-8 text-blue-100">
+          <p className="text-xl mb-8 text-teal-100">
             List your vehicle for free and reach thousands of potential buyers
           </p>
-          <Link 
-            to="/dashboard/create-listing" 
-            className="bg-white text-blue-600 px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors inline-block"
+          <Link
+            to="/dashboard/create-listing"
+            className="bg-white text-teal-600 px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors inline-block"
+            style={{color: '#008080'}}
           >
             Start Selling Now
           </Link>
@@ -395,8 +342,10 @@ const HomePage = () => {
   );
 };
 
-// Featured Vehicle Card Component
+// Featured Vehicle Card Component with Video Hover
 const FeaturedVehicleCard = ({ vehicle }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-PK', {
       style: 'currency',
@@ -407,32 +356,59 @@ const FeaturedVehicleCard = ({ vehicle }) => {
 
   return (
     <Link to={`/vehicles/${vehicle.id}`} className="group">
-      <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-        {/* Featured Badge */}
+      <div
+        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Media Section with Video Hover */}
         <div className="relative">
-          <img
-            src={
-              vehicle.primary_image?.path
-                ? `http://127.0.0.1:8000/storage/${vehicle.primary_image.path}`
-                : 'https://via.placeholder.com/400x300/e5e7eb/6b7280?text=No+Image'
-            }
-            alt={vehicle.title}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x300/e5e7eb/6b7280?text=No+Image';
-            }}
-          />
+          {isHovered && vehicle.video_path ? (
+            <video
+              src={getStorageUrl(vehicle.video_path)}
+              autoPlay
+              muted
+              loop
+              className="w-full h-48 object-cover"
+            />
+          ) : (
+            <img
+              src={
+                vehicle.primary_image?.path
+                  ? getStorageUrl(vehicle.primary_image.path)
+                  : getPlaceholderImage(400, 300, 'No Image')
+              }
+              alt={vehicle.title}
+              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
+              onError={(e) => {
+                e.target.src = getPlaceholderImage(400, 300, 'No Image');
+              }}
+            />
+          )}
+
+          {/* Featured Badge */}
           <div className="absolute top-3 left-3">
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
               <Star className="h-3 w-3 mr-1" />
               Featured
             </span>
           </div>
+
+          {/* Video Indicator */}
           {vehicle.video_path && (
             <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-800" style={{backgroundColor: '#ccfbf1', color: '#008080'}}>
                 <Play className="h-3 w-3 mr-1" />
                 Video
+              </span>
+            </div>
+          )}
+
+          {/* Hover Instruction */}
+          {vehicle.video_path && !isHovered && (
+            <div className="absolute bottom-3 right-3">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-black bg-opacity-50 text-white">
+                Hover to play
               </span>
             </div>
           )}
@@ -440,7 +416,7 @@ const FeaturedVehicleCard = ({ vehicle }) => {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-teal-600 transition-colors" style={{color: isHovered ? '#008080' : ''}}>
             {vehicle.title}
           </h3>
 
@@ -478,32 +454,6 @@ const FeaturedVehicleCard = ({ vehicle }) => {
         </div>
       </div>
     </Link>
-  );
-};
-
-// Google Ad Placeholder Component
-const GoogleAdPlaceholder = ({ size, type, description }) => {
-  const [width, height] = size.split('x').map(Number);
-
-  return (
-    <div
-      className="bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border border-gray-300"
-      style={{ width: `${width}px`, height: `${height}px` }}
-    >
-      <div className="text-center p-4">
-        <div className="text-gray-400 mb-2">
-          <div className="w-8 h-8 bg-gray-300 rounded mx-auto mb-2 flex items-center justify-center">
-            <span className="text-sm">📢</span>
-          </div>
-        </div>
-        <div className="text-xs text-gray-600 font-medium">{type}</div>
-        <div className="text-xs text-gray-500">{size}</div>
-        <div className="text-xs text-gray-400 mt-1">{description}</div>
-        <div className="text-xs text-gray-400 mt-2 border-t pt-2">
-          Replace with Google AdSense
-        </div>
-      </div>
-    </div>
   );
 };
 

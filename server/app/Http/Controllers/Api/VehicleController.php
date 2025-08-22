@@ -26,7 +26,7 @@ class VehicleController extends Controller
 
         // Text search in title and description
         if ($request->filled('query')) {
-            $searchTerm = $request->query;
+            $searchTerm = $request->get('query');
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'LIKE', "%{$searchTerm}%")
                   ->orWhere('description', 'LIKE', "%{$searchTerm}%")
@@ -199,6 +199,15 @@ class VehicleController extends Controller
         $video = $vehicleData['video'] ?? null;
         unset($vehicleData['images'], $vehicleData['video']);
 
+        // Process social media links - convert from form array format to JSON
+        if (isset($vehicleData['social_media_links']) && is_array($vehicleData['social_media_links'])) {
+            // Filter out empty values
+            $socialMediaLinks = array_filter($vehicleData['social_media_links'], function($value) {
+                return !empty($value);
+            });
+            $vehicleData['social_media_links'] = empty($socialMediaLinks) ? null : $socialMediaLinks;
+        }
+
         $vehicle = Vehicle::create($vehicleData);
 
         // Handle image uploads
@@ -232,6 +241,15 @@ class VehicleController extends Controller
         $images = $vehicleData['images'] ?? [];
         $video = $vehicleData['video'] ?? null;
         unset($vehicleData['images'], $vehicleData['video']);
+
+        // Process social media links - convert from form array format to JSON
+        if (isset($vehicleData['social_media_links']) && is_array($vehicleData['social_media_links'])) {
+            // Filter out empty values
+            $socialMediaLinks = array_filter($vehicleData['social_media_links'], function($value) {
+                return !empty($value);
+            });
+            $vehicleData['social_media_links'] = empty($socialMediaLinks) ? null : $socialMediaLinks;
+        }
 
         $vehicle->update($vehicleData);
 

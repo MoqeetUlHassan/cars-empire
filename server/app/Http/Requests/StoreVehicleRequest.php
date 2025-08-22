@@ -24,8 +24,12 @@ class StoreVehicleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // User information (set automatically)
+            'user_id' => 'required|exists:users,id',
+
             // Basic vehicle information
             'title' => 'required|string|max:255|min:10',
+            'slug' => 'required|string|max:300|unique:vehicles,slug',
             'description' => 'required|string|min:50|max:5000',
             'category_id' => 'required|exists:vehicle_categories,id',
             'make_id' => 'required|exists:vehicle_makes,id',
@@ -58,6 +62,11 @@ class StoreVehicleRequest extends FormRequest
             'contact_email' => 'required|email|max:255',
             'show_phone' => 'nullable|boolean',
             'show_email' => 'nullable|boolean',
+
+            // Listing status
+            'status' => 'required|string|in:draft,active,sold,expired,suspended',
+            'is_featured' => 'nullable|boolean',
+            'is_premium' => 'nullable|boolean',
 
             // Features (arrays)
             'features' => 'nullable|array',
