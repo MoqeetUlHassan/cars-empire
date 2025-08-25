@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import {
-  Car,
-  Upload,
-  X,
-  Save,
+import { useNavigate, useParams } from 'react-router-dom';
+import { 
+  Car, 
+  Upload, 
+  X, 
+  Save, 
   ArrowLeft,
   Calendar,
   DollarSign,
@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import api, { getStorageUrl } from '../../lib/api';
 
-const AddGarageVehiclePage = () => {
+const EditGarageVehiclePage = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -48,14 +49,25 @@ const AddGarageVehiclePage = () => {
 
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [video, setVideo] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
+  const [existingVideo, setExistingVideo] = useState(null);
   const [errors, setErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [showCustomMakeForm, setShowCustomMakeForm] = useState(false);
   const [showCustomModelForm, setShowCustomModelForm] = useState(false);
   const [customMakeData, setCustomMakeData] = useState({ name: '', country: '' });
   const [customModelData, setCustomModelData] = useState({ name: '', year_start: '', year_end: '' });
+
+  // Fetch vehicle data
+  const { data: vehicleData, isLoading: vehicleLoading } = useQuery({
+    queryKey: ['garage-vehicle', id],
+    queryFn: async () => {
+      const response = await api.get(`/garage/${id}`);
+      return response.data.data;
+    },
+  });
 
   // Fetch vehicle data for dropdowns
   const { data: categoriesData } = useQuery({
@@ -85,6 +97,46 @@ const AddGarageVehiclePage = () => {
     },
     enabled: !!formData.make_id && !!formData.category_id,
   });
+
+  // Populate form when vehicle data is loaded
+  useEffect(() => {
+    if (vehicleData) {
+      setFormData({
+        category_id: vehicleData.category_id || '',
+        make_id: vehicleData.make_id || '',
+        model_id: vehicleData.model_id || '',
+        name: vehicleData.name || '',
+        license_plate: vehicleData.license_plate || '',
+        year: vehicleData.year || new Date().getFullYear(),
+        color: vehicleData.color || '',
+        vin: vehicleData.vin || '',
+        purchase_price: vehicleData.purchase_price || '',
+        purchase_date: vehicleData.purchase_date || '',
+        current_mileage: vehicleData.current_mileage || '',
+        condition: vehicleData.condition || 'good',
+        transmission: vehicleData.transmission || 'manual',
+        fuel_type: vehicleData.fuel_type || 'petrol',
+        engine_capacity: vehicleData.engine_capacity || '',
+        engine_power: vehicleData.engine_power || '',
+        insurance_company: vehicleData.insurance_company || '',
+        insurance_policy_number: vehicleData.insurance_policy_number || '',
+        insurance_expiry: vehicleData.insurance_expiry || '',
+        registration_expiry: vehicleData.registration_expiry || '',
+        notes: vehicleData.notes || '',
+        features: vehicleData.features || [],
+      });
+      
+      // Set existing images
+      if (vehicleData.images) {
+        setExistingImages(vehicleData.images);
+      }
+
+      // Set existing video
+      if (vehicleData.video) {
+        setExistingVideo(vehicleData.video);
+      }
+    }
+  }, [vehicleData]);
 
   // Create custom make mutation
   const createMakeMutation = useMutation({
@@ -126,8 +178,8 @@ const AddGarageVehiclePage = () => {
     },
   });
 
-  // Create vehicle mutation
-  const createVehicleMutation = useMutation({
+  // Update vehicle mutation
+  const updateVehicleMutation = useMutation({
     mutationFn: async (data) => {
       const formDataToSend = new FormData();
       
@@ -144,26 +196,20 @@ const AddGarageVehiclePage = () => {
         }
       });
 
-      // Append images
-      console.log('Images to upload:', images.length);
+      // Append new images
       images.forEach((image, index) => {
-        console.log(`Appending image ${index}:`, image.name, image.size);
         formDataToSend.append(`images[${index}]`, image);
       });
 
       // Append video
       if (video) {
-        console.log('Video to upload:', video.name, video.size);
         formDataToSend.append('video', video);
       }
 
-      // Debug: Log all form data
-      console.log('FormData contents:');
-      for (let pair of formDataToSend.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+      // Add method spoofing for Laravel
+      formDataToSend.append('_method', 'PUT');
 
-      const response = await api.post('/garage', formDataToSend, {
+      const response = await api.post(`/garage/${id}`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -172,6 +218,7 @@ const AddGarageVehiclePage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['garage']);
+      queryClient.invalidateQueries(['garage-vehicle', id]);
       navigate('/dashboard/garage');
     },
     onError: (error) => {
@@ -201,7 +248,7 @@ const AddGarageVehiclePage = () => {
         model_id: ''
       }));
     }
-
+    
     // Reset model when make changes
     if (field === 'make_id') {
       setFormData(prev => ({
@@ -236,7 +283,7 @@ const AddGarageVehiclePage = () => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length + images.length > 10) {
+    if (files.length + images.length + existingImages.length > 10) {
       alert('Maximum 10 images allowed');
       return;
     }
@@ -256,6 +303,10 @@ const AddGarageVehiclePage = () => {
   const removeImage = (index) => {
     setImages(prev => prev.filter((_, i) => i !== index));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleVideoChange = (e) => {
@@ -289,8 +340,12 @@ const AddGarageVehiclePage = () => {
     setVideoPreview(null);
   };
 
+  const removeExistingVideo = () => {
+    setExistingVideo(null);
+  };
+
   const handleSubmit = () => {
-    createVehicleMutation.mutate(formData);
+    updateVehicleMutation.mutate(formData);
   };
 
   const handleCreateCustomMake = (e) => {
@@ -312,6 +367,21 @@ const AddGarageVehiclePage = () => {
     { id: 4, title: 'Images & Features', icon: ImageIcon },
   ];
 
+  if (vehicleLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -324,8 +394,8 @@ const AddGarageVehiclePage = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Add Vehicle to Garage</h1>
-            <p className="text-gray-600 mt-1">Add your personal vehicle to track maintenance and history</p>
+            <h1 className="text-3xl font-bold text-gray-900">Edit Vehicle</h1>
+            <p className="text-gray-600 mt-1">Update your vehicle information and maintenance history</p>
           </div>
         </div>
       </div>
@@ -774,10 +844,37 @@ const AddGarageVehiclePage = () => {
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Images & Features</h2>
 
+            {/* Existing Images */}
+            {existingImages.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Images
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  {existingImages.map((imagePath, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={getStorageUrl(imagePath)}
+                        alt={`Current ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-md"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vehicle Images (Max 10)
+                Add New Images (Max 10 total)
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -797,7 +894,7 @@ const AddGarageVehiclePage = () => {
                 <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB each</p>
               </div>
 
-              {/* Image Previews */}
+              {/* New Image Previews */}
               {imagePreviews.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   {imagePreviews.map((preview, index) => (
@@ -825,11 +922,35 @@ const AddGarageVehiclePage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Vehicle Video (Max 10 seconds, 50MB)
               </label>
+
+              {/* Existing Video */}
+              {existingVideo && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Video
+                  </label>
+                  <div className="relative inline-block">
+                    <video
+                      src={getStorageUrl(existingVideo)}
+                      controls
+                      className="w-full max-w-md h-48 object-cover rounded-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeExistingVideo}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <div className="text-sm text-gray-600 mb-4">
                   <label className="cursor-pointer text-teal-600 hover:text-teal-700">
-                    Click to upload video
+                    Click to upload new video
                     <input
                       type="file"
                       accept="video/*"
@@ -842,7 +963,7 @@ const AddGarageVehiclePage = () => {
                 <p className="text-xs text-gray-500">MP4, MOV, AVI, WMV up to 50MB, max 10 seconds</p>
               </div>
 
-              {/* Video Preview */}
+              {/* New Video Preview */}
               {videoPreview && (
                 <div className="mt-4">
                   <div className="relative inline-block">
@@ -925,14 +1046,14 @@ const AddGarageVehiclePage = () => {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={createVehicleMutation.isLoading}
+              disabled={updateVehicleMutation.isLoading}
               className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
               style={{backgroundColor: '#008080'}}
               onMouseEnter={(e) => e.target.style.backgroundColor = '#006666'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#008080'}
             >
               <Save className="h-4 w-4" />
-              <span>{createVehicleMutation.isLoading ? 'Adding...' : 'Add Vehicle'}</span>
+              <span>{updateVehicleMutation.isLoading ? 'Updating...' : 'Update Vehicle'}</span>
             </button>
           )}
         </div>
@@ -1069,4 +1190,4 @@ const AddGarageVehiclePage = () => {
   );
 };
 
-export default AddGarageVehiclePage;
+export default EditGarageVehiclePage;

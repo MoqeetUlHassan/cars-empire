@@ -38,6 +38,7 @@ class GarageVehicle extends Model
         'notes',
         'features',
         'images',
+        'video',
     ];
 
     protected $casts = [
@@ -133,7 +134,7 @@ class GarageVehicle extends Model
         if (!$this->insurance_expiry) {
             return false;
         }
-        
+
         return $this->insurance_expiry->diffInDays(now()) <= 30;
     }
 
@@ -145,7 +146,7 @@ class GarageVehicle extends Model
         if (!$this->registration_expiry) {
             return false;
         }
-        
+
         return $this->registration_expiry->diffInDays(now()) <= 30;
     }
 

@@ -119,28 +119,33 @@ class CustomVehicleDataController extends Controller
      */
     public function getMakes(Request $request)
     {
-        $query = VehicleMake::availableToUser(Auth::id())
-            ->where('is_active', true);
+        $categoryId = $request->get('category_id');
+        $userId = Auth::id();
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
+        $query = VehicleMake::where('is_active', true)
+            ->where(function ($q) use ($userId) {
+                $q->whereNull('user_id'); // Global makes
+                if ($userId) {
+                    $q->orWhere('user_id', $userId); // User's custom makes
+                }
+            });
+
+        if ($categoryId) {
+            // Filter makes that have vehicles in the selected category OR are custom makes for this category
+            $query->where(function ($q) use ($categoryId) {
+                // Global makes that have vehicles in this category
+                $q->whereHas('vehicles', function ($subQ) use ($categoryId) {
+                    $subQ->where('category_id', $categoryId);
+                });
+
+                // OR custom makes that belong to this category
+                $q->orWhere('category_id', $categoryId);
+            });
         }
 
-        $makes = $query->orderByRaw('user_id IS NULL DESC') // Global makes first
-                      ->orderBy('sort_order')
-                      ->orderBy('name')
-                      ->get();
-
         return response()->json([
-            'data' => $makes->map(function ($make) {
-                return [
-                    'id' => $make->id,
-                    'name' => $make->name,
-                    'country' => $make->country,
-                    'is_custom' => $make->isCustom(),
-                    'category_id' => $make->category_id,
-                ];
-            })
+            'message' => 'Makes retrieved successfully',
+            'data' => $query->orderBy('name')->get()
         ]);
     }
 
@@ -149,28 +154,40 @@ class CustomVehicleDataController extends Controller
      */
     public function getModels(Request $request)
     {
-        $query = VehicleModel::availableToUser(Auth::id())
-            ->where('is_active', true);
+        $makeId = $request->get('make_id');
+        $categoryId = $request->get('category_id');
+        $userId = Auth::id();
 
-        if ($request->filled('make_id')) {
-            $query->where('make_id', $request->make_id);
+        $query = VehicleModel::where('is_active', true)
+            ->where(function ($q) use ($userId) {
+                $q->whereNull('user_id'); // Global models
+                if ($userId) {
+                    $q->orWhere('user_id', $userId); // User's custom models
+                }
+            });
+
+        if ($makeId) {
+            $query->where('make_id', $makeId);
         }
 
-        $models = $query->orderByRaw('user_id IS NULL DESC') // Global models first
-                       ->orderBy('name')
-                       ->get();
+        if ($categoryId) {
+            // Filter models that have vehicles in the selected category OR belong to makes in this category
+            $query->where(function ($q) use ($categoryId) {
+                // Models that have vehicles in this category
+                $q->whereHas('vehicles', function ($subQ) use ($categoryId) {
+                    $subQ->where('category_id', $categoryId);
+                });
+
+                // OR models that belong to makes in this category
+                $q->orWhereHas('make', function ($subQ) use ($categoryId) {
+                    $subQ->where('category_id', $categoryId);
+                });
+            });
+        }
 
         return response()->json([
-            'data' => $models->map(function ($model) {
-                return [
-                    'id' => $model->id,
-                    'name' => $model->name,
-                    'year_start' => $model->year_start,
-                    'year_end' => $model->year_end,
-                    'is_custom' => $model->isCustom(),
-                    'make_id' => $model->make_id,
-                ];
-            })
+            'message' => 'Models retrieved successfully',
+            'data' => $query->orderBy('name')->get()
         ]);
     }
 }

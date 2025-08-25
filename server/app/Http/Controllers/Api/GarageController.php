@@ -8,6 +8,7 @@ use App\Models\MaintenanceLog;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -95,19 +96,31 @@ class GarageController extends Controller
             'features.*' => 'string|max:100',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:51200', // 50MB max
         ]);
 
-        $vehicleData = $request->except(['images']);
+        $vehicleData = $request->except(['images', 'video']);
         $vehicleData['user_id'] = Auth::id();
 
         // Handle image uploads
+        Log::info('Checking for images in request', ['has_images' => $request->hasFile('images')]);
         if ($request->hasFile('images')) {
+            Log::info('Processing images', ['count' => count($request->file('images'))]);
             $imagePaths = [];
             foreach ($request->file('images') as $image) {
                 $path = $image->store('garage/vehicles/' . Auth::id(), 'public');
                 $imagePaths[] = $path;
+                Log::info('Image stored', ['path' => $path]);
             }
             $vehicleData['images'] = $imagePaths;
+        }
+
+        // Handle video upload
+        Log::info('Checking for video in request', ['has_video' => $request->hasFile('video')]);
+        if ($request->hasFile('video')) {
+            $videoPath = $request->file('video')->store('garage/videos/' . Auth::id(), 'public');
+            $vehicleData['video'] = $videoPath;
+            Log::info('Video stored', ['path' => $videoPath]);
         }
 
         $vehicle = GarageVehicle::create($vehicleData);
@@ -196,9 +209,10 @@ class GarageController extends Controller
             'features.*' => 'string|max:100',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:51200', // 50MB max
         ]);
 
-        $vehicleData = $request->except(['images']);
+        $vehicleData = $request->except(['images', 'video']);
 
         // Handle image uploads
         if ($request->hasFile('images')) {
@@ -215,6 +229,17 @@ class GarageController extends Controller
                 $imagePaths[] = $path;
             }
             $vehicleData['images'] = $imagePaths;
+        }
+
+        // Handle video upload
+        if ($request->hasFile('video')) {
+            // Delete old video
+            if ($garageVehicle->video) {
+                Storage::disk('public')->delete($garageVehicle->video);
+            }
+
+            $videoPath = $request->file('video')->store('garage/videos/' . Auth::id(), 'public');
+            $vehicleData['video'] = $videoPath;
         }
 
         $garageVehicle->update($vehicleData);

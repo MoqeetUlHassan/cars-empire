@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\GarageController;
 use App\Http\Controllers\Api\MaintenanceLogController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\VehicleDataController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -34,29 +34,6 @@ Route::get('/vehicle-data/categories', function () {
     ]);
 });
 
-Route::get('/vehicle-data/makes', function () {
-    return response()->json([
-        'message' => 'Makes retrieved successfully',
-        'data' => \App\Models\VehicleMake::where('is_active', true)
-            ->orderBy('name')
-            ->get()
-    ]);
-});
-
-Route::get('/vehicle-data/models', function () {
-    $makeId = request('make_id');
-    $query = \App\Models\VehicleModel::where('is_active', true);
-
-    if ($makeId) {
-        $query->where('make_id', $makeId);
-    }
-
-    return response()->json([
-        'message' => 'Models retrieved successfully',
-        'data' => $query->orderBy('name')->get()
-    ]);
-});
-
 
 
 // Vehicle routes (public)
@@ -64,87 +41,12 @@ Route::get('/vehicles/search', [VehicleController::class, 'search']);
 Route::get('/vehicles', [VehicleController::class, 'index']);
 Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show']);
 
-// Categories, Makes, Models (public)
-Route::get('/categories', function () {
-    return response()->json([
-        'data' => \App\Models\VehicleCategory::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get()
-    ]);
-});
-
-// Category counts (public)
-Route::get('/category-counts', function () {
-    $categories = \App\Models\VehicleCategory::where('is_active', true)->get();
-    $counts = [];
-
-    foreach ($categories as $category) {
-        $counts[$category->slug] = \App\Models\Vehicle::where('category_id', $category->id)
-            ->where('status', 'active')
-            ->count();
-    }
-
-    return response()->json([
-        'data' => $counts
-    ]);
-});
-
-// Featured vehicles (public)
-Route::get('/featured-vehicles', function () {
-    $featuredVehicles = \App\Models\Vehicle::where('status', 'active')
-        ->where('is_featured', true)
-        ->with(['category', 'make', 'model', 'images', 'user'])
-        ->orderBy('created_at', 'desc')
-        ->limit(6)
-        ->get();
-
-    // Transform the data to include additional computed fields
-    $featuredVehicles->transform(function ($vehicle) {
-        // Add primary image
-        $vehicle->primary_image = $vehicle->images->where('is_primary', true)->first()
-            ?: $vehicle->images->first();
-
-        // Add formatted price
-        $vehicle->formatted_price = 'Rs ' . number_format($vehicle->price);
-
-        // Add time ago
-        $vehicle->created_at_human = $vehicle->created_at->diffForHumans();
-
-        return $vehicle;
-    });
-
-    return response()->json([
-        'data' => $featuredVehicles
-    ]);
-});
-
-// Public makes (only global ones)
-Route::get('/makes', function (Request $request) {
-    $query = \App\Models\VehicleMake::where('is_active', true)
-        ->whereNull('user_id'); // Only global makes for public
-
-    if ($request->filled('category_id')) {
-        $query->where('category_id', $request->category_id);
-    }
-
-    return response()->json([
-        'data' => $query->orderBy('sort_order')->get()
-    ]);
-});
-
-// Public models (only global ones)
-Route::get('/models', function (Request $request) {
-    $query = \App\Models\VehicleModel::where('is_active', true)
-        ->whereNull('user_id'); // Only global models for public
-
-    if ($request->filled('make_id')) {
-        $query->where('make_id', $request->make_id);
-    }
-
-    return response()->json([
-        'data' => $query->orderBy('name')->get()
-    ]);
-});
+// Public vehicle data routes
+Route::get('/categories', [VehicleDataController::class, 'getCategories']);
+Route::get('/category-counts', [VehicleDataController::class, 'getCategoryCounts']);
+Route::get('/featured-vehicles', [VehicleDataController::class, 'getFeaturedVehicles']);
+Route::get('/makes', [VehicleDataController::class, 'getPublicMakes']);
+Route::get('/models', [VehicleDataController::class, 'getPublicModels']);
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -177,6 +79,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/garage/{garageVehicle}/maintenance/{maintenanceLog}', [MaintenanceLogController::class, 'show']);
     Route::put('/garage/{garageVehicle}/maintenance/{maintenanceLog}', [MaintenanceLogController::class, 'update']);
     Route::delete('/garage/{garageVehicle}/maintenance/{maintenanceLog}', [MaintenanceLogController::class, 'destroy']);
+
+    // Custom vehicle data management
+    Route::get('/vehicle-data/makes', [CustomVehicleDataController::class, 'getMakes']);
+    Route::get('/vehicle-data/models', [CustomVehicleDataController::class, 'getModels']);
+    Route::post('/vehicle-data/makes', [CustomVehicleDataController::class, 'createMake']);
+    Route::post('/vehicle-data/models', [CustomVehicleDataController::class, 'createModel']);
 
     // Vehicle CRUD operations (authenticated)
     Route::post('/vehicles', [VehicleController::class, 'store']);
