@@ -19,6 +19,8 @@ import CreateListingPage from './pages/CreateListingPage';
 import EditListingPage from './pages/EditListingPage';
 import MyListingsPage from './pages/MyListingsPage';
 import ProfilePage from './pages/Dashboard/ProfilePage';
+import GaragePage from './pages/Dashboard/GaragePage';
+import AddGarageVehiclePage from './pages/Dashboard/AddGarageVehiclePage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -68,6 +70,8 @@ function App() {
                 <Route path="edit-listing/:id" element={<EditListingPage />} />
                 <Route path="my-listings" element={<MyListingsPage />} />
                 <Route path="profile" element={<ProfilePage />} />
+                <Route path="garage" element={<GaragePage />} />
+                <Route path="garage/add" element={<AddGarageVehiclePage />} />
               </Route>
             </Routes>
           </div>

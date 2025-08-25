@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomVehicleDataController;
+use App\Http\Controllers\Api\GarageController;
+use App\Http\Controllers\Api\MaintenanceLogController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +23,39 @@ Route::get('/categories', function () {
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Vehicle data routes (public)
+Route::get('/vehicle-data/categories', function () {
+    return response()->json([
+        'message' => 'Categories retrieved successfully',
+        'data' => \App\Models\VehicleCategory::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+    ]);
+});
+
+Route::get('/vehicle-data/makes', function () {
+    return response()->json([
+        'message' => 'Makes retrieved successfully',
+        'data' => \App\Models\VehicleMake::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+    ]);
+});
+
+Route::get('/vehicle-data/models', function () {
+    $makeId = request('make_id');
+    $query = \App\Models\VehicleModel::where('is_active', true);
+
+    if ($makeId) {
+        $query->where('make_id', $makeId);
+    }
+
+    return response()->json([
+        'message' => 'Models retrieved successfully',
+        'data' => $query->orderBy('name')->get()
+    ]);
+});
 
 
 
@@ -114,6 +150,33 @@ Route::get('/models', function (Request $request) {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // User profile management
+    Route::get('/profile', [UserController::class, 'profile']);
+    Route::put('/profile', [UserController::class, 'updateProfile']);
+    Route::delete('/profile/avatar', [UserController::class, 'deleteAvatar']);
+    Route::get('/profile/activity', [UserController::class, 'activitySummary']);
+
+    // Garage management
+    Route::get('/garage', [GarageController::class, 'index']);
+    Route::post('/garage', [GarageController::class, 'store']);
+    Route::get('/garage/statistics', [GarageController::class, 'statistics']);
+    Route::get('/garage/{garageVehicle}', [GarageController::class, 'show']);
+    Route::put('/garage/{garageVehicle}', [GarageController::class, 'update']);
+    Route::delete('/garage/{garageVehicle}', [GarageController::class, 'destroy']);
+
+    // Garage vehicle actions
+    Route::post('/garage/{garageVehicle}/list-for-sale', [GarageController::class, 'listForSale']);
+    Route::post('/garage/{garageVehicle}/remove-from-sale', [GarageController::class, 'removeFromSale']);
+    Route::post('/garage/{garageVehicle}/mark-as-sold', [GarageController::class, 'markAsSold']);
+
+    // Maintenance logs
+    Route::get('/garage/{garageVehicle}/maintenance', [MaintenanceLogController::class, 'index']);
+    Route::post('/garage/{garageVehicle}/maintenance', [MaintenanceLogController::class, 'store']);
+    Route::get('/garage/{garageVehicle}/maintenance/statistics', [MaintenanceLogController::class, 'statistics']);
+    Route::get('/garage/{garageVehicle}/maintenance/{maintenanceLog}', [MaintenanceLogController::class, 'show']);
+    Route::put('/garage/{garageVehicle}/maintenance/{maintenanceLog}', [MaintenanceLogController::class, 'update']);
+    Route::delete('/garage/{garageVehicle}/maintenance/{maintenanceLog}', [MaintenanceLogController::class, 'destroy']);
 
     // Vehicle CRUD operations (authenticated)
     Route::post('/vehicles', [VehicleController::class, 'store']);

@@ -84,6 +84,9 @@ const Header = () => {
                     <Link to="/dashboard/my-listings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       My Listings
                     </Link>
+                    <Link to="/dashboard/garage" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      My Garage
+                    </Link>
                     <Link to="/dashboard/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       Profile
                     </Link>
@@ -149,15 +152,22 @@ const Header = () => {
                   >
                     Dashboard
                   </Link>
-                  <Link 
-                    to="/dashboard/my-listings" 
+                  <Link
+                    to="/dashboard/my-listings"
                     className="text-gray-700 hover:text-blue-600 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Listings
                   </Link>
-                  <Link 
-                    to="/dashboard/profile" 
+                  <Link
+                    to="/dashboard/garage"
+                    className="text-gray-700 hover:text-blue-600 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Garage
+                  </Link>
+                  <Link
+                    to="/dashboard/profile"
                     className="text-gray-700 hover:text-blue-600 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
